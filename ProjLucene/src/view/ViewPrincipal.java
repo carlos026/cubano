@@ -1,25 +1,10 @@
 package view;
 
+import java.awt.Color;
+import java.awt.Desktop;
 import java.awt.EventQueue;
-
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableModel;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
-
-import lucene.IndexFiles;
-import lucene.SearchFiles;
-import lucene.TextFileFilter;
-
-import javax.swing.JTextField;
-import javax.swing.JLabel;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -27,21 +12,46 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.awt.event.ActionEvent;
-import java.awt.Font;
-import java.awt.Color;
-import java.awt.Desktop;
 
-import javax.swing.JTable;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.LetterTokenizer;
+import org.apache.lucene.analysis.en.PorterStemFilter;
+import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.standard.StandardFilter;
+
+
+
+import lucene.IndexFiles;
+import lucene.SearchFiles;
+import lucene.TextFileFilter;
+
+import util.Funcoes;
 
 public class ViewPrincipal extends JFrame {
 
 	private JPanel contentPane;
 	private JTextField tfTexto;
-
+	
 	//String dataDir = "/Users/Lory1/Documents/Proj_Faculdade/Lucene/text";
-	String dataDir = "/Users/Carlos/Documents/Fucapi/Topicos de banco de dados/teste";
+	String dataDir = "/Users/AppDev/Documents/Fucapi/TopicosBancoDeDados/Testes";
 	lucene.IndexFiles indexer;
 	lucene.SearchFiles searcher;
 	private JTable table;
@@ -135,6 +145,7 @@ public class ViewPrincipal extends JFrame {
 					vp = new ViewPrincipal();
 					vp.createIndex();									
 					vp.search(tfTexto.getText(), lblDetalhes, table);
+					vp.filters(tfTexto.getText());
 				} catch (IOException exception) {
 					exception.printStackTrace();
 			      }
@@ -178,6 +189,19 @@ public class ViewPrincipal extends JFrame {
 		indexer.close();
 		System.out.println(numIndexed + " arquivos indexados, em: " + (endTime - startTime) + " ms");
 	}
+	
+	protected TokenStreamComponents filters(String fieldNamer) throws IOException {
+		Tokenizer source = new LetterTokenizer();
+		TokenStream filter = new LowerCaseFilter(source);
+		Funcoes f = new Funcoes();
+		ArrayList<String> stopWords = f.getStopWords();
+		final CharArraySet stopSet = new CharArraySet(stopWords, false);
+		filter = new StopFilter(filter, stopSet);
+		filter = new PorterStemFilter(filter);
+		filter = new LowerCaseFilter(filter); 
+		filter = new StandardFilter(filter);
+		return new TokenStreamComponents(source, filter);
+	}
 
 	private void search(String searchQuery, JLabel lblDetalhes, JTable table) throws IOException, ParseException {
 		int numCols = table.getModel().getColumnCount();
@@ -195,7 +219,6 @@ public class ViewPrincipal extends JFrame {
 		} else {
 			lblDetalhes.setText("Documentos encontrados: " + hits.totalHits + ". Tempo de resposta: "
 					+ (endTime - startTime) + "ms");
-
 		}
 		
 		
